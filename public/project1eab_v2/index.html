@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Evan Bradshaw" />
+    <meta name="description" content="Describe your website">
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Project 1</title>
+    <meta name="generator" content="Hugo 0.70.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/blog/">ABOUT ME</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/project1eab_v2/">Project 1</a></strong>
+          </h3>
+        </div>
+        <div class="blog-title">
+          <h4>
+          January 1, 0001
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>In this analysis, data from the <a href="https://www.acgme.org/Newsroom/Newsroom-Details/ArticleID/9665/ACGME-Releases-2018-2019-Statistics-on-Graduate-Medical-Education-Programs-and-Resident-Physicians">Accreditation Council of Graduate Medical Education</a> was used to compare number of medical residents across all subspecialties by type of medical degree and sex. Both data sets were obtained from the same report providing summary statistics about graduate medical eduction in the US.</p>
+<p>The datasets share the variable “Specialty”. The other variables in the first dataset include the total count of residents, type of medical degree (in both raw count and percent), and the year. The second data set also includes the total count of residents along with sex (in both raw count and percent) and the year.</p>
+<p>This data is extremely interesting to me as I will be attending medical school next year and eventually finding myself in the situation of choosing a specialty. The specialty application process known as “the Match” is fascinating as it is daunting and with this analysis I hope to understand the populations of different specialties to better inform my decision for when I reach that process. I expect the more demanding/competitve specialties to have the lowest concentration of non-US MD degrees and women based on anecdotal evidence and stereotypes of these specialties.</p>
+<pre class="r"><code>library(tidyverse)</code></pre>
+</div>
+<div id="tidying" class="section level1">
+<h1>Tidying</h1>
+<pre class="r"><code>data_s &lt;- read.csv(&quot;~/Documents/University of Texas/Computational Bio/ACGME_sex_v2.csv&quot;)
+data_d &lt;- read.csv(&quot;~/Documents/University of Texas/Computational Bio/ACGME_degree_v2.csv&quot;)
+
+data_s_long &lt;- data_s %&gt;% 
+  # Pivot the sexes and the respective counts
+  pivot_longer(cols = c(&quot;Female&quot;, &quot;Male&quot;, &quot;Not.Reported&quot;), 
+               names_to = &quot;Sex&quot;, values_to = &quot;Count_Sex&quot;)%&gt;%
+  
+  # Convert the &#39;specialty&#39; column to a character vector
+  mutate(specialty = as.character(Specialty)) %&gt;% 
+  select(-Specialty) %&gt;%
+  
+  # Convert the &#39;subspecialty&#39; column to a character vector
+  mutate(subspecialty = as.character(Subspecialty))%&gt;%
+  select(-Subspecialty)
+
+data_d_long &lt;- data_d %&gt;%
+  # Pivot the degree types and their respective counts
+  pivot_longer(cols = c(4:8), 
+               names_to = &quot;degree_l&quot;, values_to = &quot;Count_degree&quot;) %&gt;% 
+  # Recode the degree types to abbreviations
+  mutate(Degree = recode(degree_l, 
+    US.LCME..Accredited.Medical.School = &quot;US.MD&quot;, 
+    Canadian.Medical.School = &quot;CAN.MD&quot;, 
+    International.Medical.School = &quot;IMG&quot;, 
+    US.Medical.School.Unknown = &quot;UNKWN&quot;, 
+    Osteopathic.Medical.School = &quot;US.DO&quot;)) %&gt;%
+  select(-degree_l) %&gt;%
+ 
+  # Convert the &#39;specialty&#39; column into a character vector
+  mutate(specialty = as.character(Specialty)) %&gt;% select(-Specialty) %&gt;%
+  
+   # Convert the &#39;subspecialty&#39; column to a character vector
+  mutate(subspecialty = as.character(Subspecialty))%&gt;%
+  select(-Subspecialty)
+
+glimpse(data_d_long)</code></pre>
+<pre><code>## Observations: 775
+## Variables: 5
+## $ Total.Residents &lt;int&gt; 304, 304, 304, 304, 304, 6507, 6507, 6507, 6507, 6507…
+## $ Count_degree    &lt;int&gt; 218, 54, 31, 1, 0, 4656, 854, 995, 2, 0, 159, 33, 21,…
+## $ Degree          &lt;chr&gt; &quot;US.MD&quot;, &quot;IMG&quot;, &quot;US.DO&quot;, &quot;CAN.MD&quot;, &quot;UNKWN&quot;, &quot;US.MD&quot;, …
+## $ specialty       &lt;chr&gt; &quot;Allergy and immunology&quot;, &quot;Allergy and immunology&quot;, &quot;…
+## $ subspecialty    &lt;chr&gt; &quot;Allergy and immunology&quot;, &quot;Allergy and immunology&quot;, &quot;…</code></pre>
+<pre class="r"><code>glimpse(data_s_long)</code></pre>
+<pre><code>## Observations: 465
+## Variables: 6
+## $ Total.Programs  &lt;int&gt; 78, 78, 78, 155, 155, 155, 69, 69, 69, 1, 1, 1, 64, 6…
+## $ Total.Residents &lt;int&gt; 304, 304, 304, 6507, 6507, 6507, 215, 215, 215, 1, 1,…
+## $ Sex             &lt;chr&gt; &quot;Female&quot;, &quot;Male&quot;, &quot;Not.Reported&quot;, &quot;Female&quot;, &quot;Male&quot;, &quot;…
+## $ Count_Sex       &lt;int&gt; 215, 80, 9, 2148, 4195, 164, 55, 151, 9, 0, 1, 0, 64,…
+## $ specialty       &lt;chr&gt; &quot;Allergy and immunology&quot;, &quot;Allergy and immunology&quot;, &quot;…
+## $ subspecialty    &lt;chr&gt; &quot;Allergy and immunology&quot;, &quot;Allergy and immunology&quot;, &quot;…</code></pre>
+<div id="tidying-discussion" class="section level4">
+<h4>Tidying Discussion</h4>
+<p>Both of the datasets needed tyding. The general flow was to pivot the variable and then recode as needed to make the output easier to understand. In the dataset containing degree types the following abbreviations were used:</p>
+<ul>
+<li>‘US.MD’ refers to an MD degree obtained from an accredited US medical school</li>
+<li>‘IMG’ refers to an international medical graduate (outside of US and Canada)</li>
+<li>‘US.DO’ refers to a DO degree obtained from a US osteopathic medical school</li>
+<li>‘CAN.MD’ refers to an MD degree obtained from a Candian medical school</li>
+<li>‘UNKWN’ refers to a medical degree with no information as to where it was obtained</li>
+</ul>
+<p>The Specialty refers to the overall Specialty while Subspecialty refers to a division of that particular specialty. If the Subspecialty is the same as in the Specialty column, then the following data applies to the specialty as a whole.</p>
+<p>In both original datasets, the count for each variable was also converted into a ratio. A join with these ratios made things unnecessarily complex, especially when these ratios could be calculated after putting the data together, so I removed those variables.</p>
+<p>The resulting degree and sex datasets came out to 755 and 465 observations, respectively.</p>
+</div>
+</div>
+<div id="joining" class="section level1">
+<h1>Joining</h1>
+<pre class="r"><code>ds_join &lt;- data_d_long %&gt;% full_join(data_s_long, by=&quot;subspecialty&quot;) %&gt;% 
+  select(-Total.Residents.y &amp; -specialty.y) 
+glimpse(ds_join)</code></pre>
+<pre><code>## Observations: 3,285
+## Variables: 8
+## $ Total.Residents.x &lt;int&gt; 304, 304, 304, 304, 304, 304, 304, 304, 304, 304, 3…
+## $ Count_degree      &lt;int&gt; 218, 218, 218, 54, 54, 54, 31, 31, 31, 1, 1, 1, 0, …
+## $ Degree            &lt;chr&gt; &quot;US.MD&quot;, &quot;US.MD&quot;, &quot;US.MD&quot;, &quot;IMG&quot;, &quot;IMG&quot;, &quot;IMG&quot;, &quot;US…
+## $ specialty.x       &lt;chr&gt; &quot;Allergy and immunology&quot;, &quot;Allergy and immunology&quot;,…
+## $ subspecialty      &lt;chr&gt; &quot;Allergy and immunology&quot;, &quot;Allergy and immunology&quot;,…
+## $ Total.Programs    &lt;int&gt; 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78,…
+## $ Sex               &lt;chr&gt; &quot;Female&quot;, &quot;Male&quot;, &quot;Not.Reported&quot;, &quot;Female&quot;, &quot;Male&quot;,…
+## $ Count_Sex         &lt;int&gt; 215, 80, 9, 215, 80, 9, 215, 80, 9, 215, 80, 9, 215…</code></pre>
+<div id="joining-discussion" class="section level4">
+<h4>Joining Discussion</h4>
+<p>For this analysis, a full join was used. These datasets came from the same report and therefore, conveniently, had the exact same list of specialties and subspecialties. This made the ‘subspecialty’ variable an obvious candidate to join the datasets by, with it being the most specific list of items shared by the data sets. No rows were dropped because the original datasets contained zeroes instead of NA’s. This would cause the full join to produce the exact same result as either the left or right join. Both datasets contained the ‘Total.Residents’ and the ‘Specialty’ variables so one of each were removed. The resulting dataframe contains 3,285 observations and 8 variables.</p>
+</div>
+</div>
+<div id="wrangling" class="section level1">
+<h1>Wrangling</h1>
+<pre class="r"><code>#A: Maximum and Minimum Total Programs by Specialty
+ds_join %&gt;% filter(specialty.x == subspecialty) %&gt;% 
+  select(specialty.x, subspecialty, Total.Programs) %&gt;% 
+  summarize(Max_Programs = max(Total.Programs), Min_Programs = min(Total.Programs))</code></pre>
+<pre><code>## # A tibble: 1 x 2
+##   Max_Programs Min_Programs
+##          &lt;int&gt;        &lt;int&gt;
+## 1          671           19</code></pre>
+<pre class="r"><code>ds_join %&gt;% filter(specialty.x == subspecialty) %&gt;% 
+  filter(Total.Programs == 671 | Total.Programs == 19) %&gt;% 
+  select(specialty.x, Total.Programs) %&gt;% 
+  distinct() %&gt;% arrange(Total.Programs)</code></pre>
+<pre><code>## # A tibble: 2 x 2
+##   specialty.x                               Total.Programs
+##   &lt;chr&gt;                                              &lt;int&gt;
+## 1 Osteopathic neuromusculoskeletal medicine             19
+## 2 Family medicine                                      671</code></pre>
+<pre class="r"><code>#B: Proportion of Resident Workforce that is Female
+ds_join %&gt;% select(specialty.x, subspecialty, Sex, Count_Sex, Total.Residents.x) %&gt;% 
+  filter(Sex == &quot;Female&quot;) %&gt;% distinct() %&gt;% 
+  summarize(Proportion.Female = sum(Count_Sex)/sum(Total.Residents.x) )</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   Proportion.Female
+##               &lt;dbl&gt;
+## 1             0.438</code></pre>
+<pre class="r"><code>#C: Highest Female to Male Ratios by Specialty
+ds_join %&gt;% select(specialty.x, subspecialty, Sex, Count_Sex, Total.Residents.x) %&gt;% 
+  filter(specialty.x == subspecialty, Sex == &quot;Female&quot; | Sex == &quot;Male&quot;) %&gt;% 
+  distinct() %&gt;% select(-subspecialty)%&gt;% pivot_wider( names_from = Sex, values_from = Count_Sex ) %&gt;% 
+  mutate(F_M_Ratio = Female/Male) %&gt;%
+  arrange(desc(F_M_Ratio)) %&gt;% slice(1:3)</code></pre>
+<pre><code>## # A tibble: 3 x 5
+##   specialty.x               Total.Residents.x Female  Male F_M_Ratio
+##   &lt;chr&gt;                                 &lt;int&gt;  &lt;int&gt; &lt;int&gt;     &lt;dbl&gt;
+## 1 Obstetrics and gynecology              5571   4559   898      5.08
+## 2 Allergy and immunology                  304    215    80      2.69
+## 3 Pediatrics                             9221   6002  2343      2.56</code></pre>
+<pre class="r"><code>#D: Highest Male to Female Ratios by Specialty
+ds_join %&gt;% select(specialty.x, subspecialty, Sex, Count_Sex, Total.Residents.x) %&gt;% 
+  filter(specialty.x == subspecialty, Sex == &quot;Female&quot; | Sex == &quot;Male&quot;) %&gt;% 
+  distinct() %&gt;% select(-subspecialty)%&gt;% 
+  pivot_wider( names_from = Sex, values_from = Count_Sex ) %&gt;% 
+  mutate(M_F_Ratio = Male/Female) %&gt;% 
+  arrange(desc(M_F_Ratio)) %&gt;% slice(1:3)</code></pre>
+<pre><code>## # A tibble: 3 x 5
+##   specialty.x                           Total.Residents.x Female  Male M_F_Ratio
+##   &lt;chr&gt;                                             &lt;int&gt;  &lt;int&gt; &lt;int&gt;     &lt;dbl&gt;
+## 1 Orthopaedic surgery                                4125    606  3392      5.60
+## 2 Neurological surgery                               1462    253  1199      4.74
+## 3 Interventional radiology - integrated               246     45   201      4.47</code></pre>
+<pre class="r"><code>##E: Highest Proportion of MD&#39;s
+md_prop_df&lt;- ds_join  %&gt;% filter(specialty.x == subspecialty)  %&gt;% 
+  select(-Total.Programs, -Sex, -Count_Sex) %&gt;% 
+  distinct() %&gt;% pivot_wider(names_from = Degree, values_from = Count_degree) %&gt;% 
+  mutate(MD_Prop = US.MD/Total.Residents.x) 
+md_prop_df %&gt;% arrange(desc(MD_Prop)) %&gt;% slice(1:10)</code></pre>
+<pre><code>## # A tibble: 10 x 9
+##    Total.Residents… specialty.x subspecialty US.MD   IMG US.DO CAN.MD UNKWN
+##               &lt;int&gt; &lt;chr&gt;       &lt;chr&gt;        &lt;int&gt; &lt;int&gt; &lt;int&gt;  &lt;int&gt; &lt;int&gt;
+##  1              774 Radiation … Radiation o…   741    17    16      0     0
+##  2              901 Plastic su… Plastic sur…   852    44     5      0     0
+##  3             1651 Otolaryngo… Otolaryngol…  1522    32    97      0     0
+##  4             1473 Ophthalmol… Ophthalmolo…  1351    59    62      1     0
+##  5             1331 Urology     Urology       1204    48    79      0     0
+##  6             4125 Orthopaedi… Orthopaedic…  3659    67   399      0     0
+##  7             1462 Neurologic… Neurologica…  1285   110    65      2     0
+##  8              246 Interventi… Interventio…   213    14    19      0     0
+##  9              292 Vascular s… Vascular su…   252    28    12      0     0
+## 10             1563 Dermatology Dermatology   1324    53   186      0     0
+## # … with 1 more variable: MD_Prop &lt;dbl&gt;</code></pre>
+<pre class="r"><code>##F: Standard Deviation of Total Residents by Specialty and Degree
+ds_join %&gt;% group_by(specialty.x, Degree) %&gt;% 
+ summarize(SD = sd(Count_degree)) %&gt;% arrange(desc(SD)) </code></pre>
+<pre><code>## # A tibble: 160 x 3
+## # Groups:   specialty.x [32]
+##    specialty.x               Degree    SD
+##    &lt;chr&gt;                     &lt;chr&gt;  &lt;dbl&gt;
+##  1 Internal medicine         US.MD  2387.
+##  2 Surgery                   US.MD  2120.
+##  3 Internal medicine         IMG    2043.
+##  4 Obstetrics and gynecology US.MD  1560.
+##  5 Family medicine           US.MD  1466.
+##  6 Psychiatry                US.MD  1319.
+##  7 Emergency medicine        US.MD  1298.
+##  8 Pediatrics                US.MD  1199.
+##  9 Anesthesiology            US.MD  1160.
+## 10 Family medicine           US.DO  1134.
+## # … with 150 more rows</code></pre>
+<pre class="r"><code>##G Correlation Matrix Between Proption of Each Degree Type and Proportion of Each Sex by Specialty
+cor_data &lt;- ds_join %&gt;% filter(specialty.x == subspecialty) %&gt;% 
+  pivot_wider(names_from = Degree, values_from = Count_degree) %&gt;% 
+  mutate(MD_Prop = US.MD/Total.Residents.x, DO_Prop = US.DO/Total.Residents.x, IMG_Prop = IMG/Total.Residents.x, CAN.MD_Prop = CAN.MD/Total.Residents.x)%&gt;% 
+  select(-c(US.MD, IMG, US.DO, CAN.MD, UNKWN)) %&gt;% 
+  pivot_wider(names_from = Sex, values_from = Count_Sex ) %&gt;% 
+  mutate(Male_Propor = Male/Total.Residents.x, Female_Propo =Female/Total.Residents.x, Not.Rep_Propo = Not.Reported/Total.Residents.x) %&gt;%
+  select(-c(Male, Female, Not.Reported))%&gt;% select_if(is.numeric) %&gt;% cor()
+cor_data</code></pre>
+<pre><code>##                   Total.Residents.x Total.Programs    MD_Prop     DO_Prop
+## Total.Residents.x        1.00000000     0.86259513 -0.2356457  0.07208622
+## Total.Programs           0.86259513     1.00000000 -0.1851709  0.07557229
+## MD_Prop                 -0.23564573    -0.18517087  1.0000000 -0.70227768
+## DO_Prop                  0.07208622     0.07557229 -0.7022777  1.00000000
+## IMG_Prop                 0.25299719     0.17884047 -0.6039900 -0.14308973
+## CAN.MD_Prop             -0.16665568    -0.20480295 -0.3404786 -0.08159108
+## Male_Propor             -0.10364855    -0.11975711  0.3016954 -0.20912126
+## Female_Propo             0.04346710     0.08616760 -0.2830663  0.19811473
+## Not.Rep_Propo            0.53068212     0.31426072 -0.2429568  0.15255471
+##                     IMG_Prop   CAN.MD_Prop  Male_Propor  Female_Propo
+## Total.Residents.x  0.2529972 -0.1666556826 -0.103648548  0.0434671031
+## Total.Programs     0.1788405 -0.2048029502 -0.119757109  0.0861676013
+## MD_Prop           -0.6039900 -0.3404785802  0.301695394 -0.2830662905
+## DO_Prop           -0.1430897 -0.0815910811 -0.209121260  0.1981147292
+## IMG_Prop           1.0000000  0.5509273804 -0.187255098  0.1735692661
+## CAN.MD_Prop        0.5509274  1.0000000000 -0.002529138  0.0002163491
+## Male_Propor       -0.1872551 -0.0025291376  1.000000000 -0.9936091094
+## Female_Propo       0.1735693  0.0002163491 -0.993609109  1.0000000000
+## Not.Rep_Propo      0.1684526  0.0199698785 -0.344987859  0.2368370820
+##                   Not.Rep_Propo
+## Total.Residents.x    0.53068212
+## Total.Programs       0.31426072
+## MD_Prop             -0.24295676
+## DO_Prop              0.15255471
+## IMG_Prop             0.16845264
+## CAN.MD_Prop          0.01996988
+## Male_Propor         -0.34498786
+## Female_Propo         0.23683708
+## Not.Rep_Propo        1.00000000</code></pre>
+<pre class="r"><code>##H: Count of Each Degree Type in the Resident Population
+ds_join %&gt;% 
+  select(Total.Residents.x, specialty.x, subspecialty, Count_degree, Degree) %&gt;% 
+  distinct() %&gt;% group_by(Degree) %&gt;% 
+  summarize(Total.Degree = sum(Count_degree)) %&gt;% 
+  arrange(Total.Degree)</code></pre>
+<pre><code>## # A tibble: 5 x 2
+##   Degree Total.Degree
+##   &lt;chr&gt;         &lt;int&gt;
+## 1 UNKWN             1
+## 2 CAN.MD          165
+## 3 US.DO         21927
+## 4 IMG           32686
+## 5 US.MD         85612</code></pre>
+<pre class="r"><code>##I: Count of Subspecialties by Specialty
+ds_join %&gt;% group_by(specialty.x) %&gt;% 
+  summarize(Count.Subs = n_distinct(subspecialty)) %&gt;%
+  arrange(desc( Count.Subs)) </code></pre>
+<pre><code>## # A tibble: 32 x 2
+##    specialty.x                          Count.Subs
+##    &lt;chr&gt;                                     &lt;int&gt;
+##  1 Internal medicine                            21
+##  2 Pediatrics                                   18
+##  3 Pathologyanatomic and clinical               11
+##  4 Anesthesiology                                9
+##  5 Orthopaedic surgery                           9
+##  6 Neurology                                     8
+##  7 Radiology-diagnostic                          8
+##  8 Emergency medicine                            7
+##  9 Psychiatry                                    7
+## 10 Physical medicine and rehabilitation          6
+## # … with 22 more rows</code></pre>
+<pre class="r"><code>##J: Subspecialties With the Fewest Residents
+ds_join %&gt;% select(Total.Residents.x, subspecialty, specialty.x) %&gt;% group_by(subspecialty) %&gt;%distinct() %&gt;% arrange(Total.Residents.x)</code></pre>
+<pre><code>## # A tibble: 155 x 3
+## # Groups:   subspecialty [136]
+##    Total.Residents.x subspecialty                      specialty.x              
+##                &lt;int&gt; &lt;chr&gt;                             &lt;chr&gt;                    
+##  1                 1 &quot; Clinical informatics&quot;           Anesthesiology           
+##  2                 1 &quot; Endovascular surgical neurorad… Neurological surgery     
+##  3                 1 &quot; Brain injury medicine&quot;          Neurology                
+##  4                 1 &quot; Endovascular surgical neurorad… Neurology                
+##  5                 1 &quot; Chemical pathology&quot;             Pathologyanatomic and cl…
+##  6                 1 &quot; Neuromuscular medicine&quot;         Physical medicine and re…
+##  7                 2 &quot; Undersea and hyperbaric medici… Preventive medicine      
+##  8                 4 &quot; Medical toxicology&quot;             Preventive medicine      
+##  9                 5 &quot; Clinical informatics&quot;           Emergency medicine       
+## 10                 5 &quot; Ophthalmic plastic and reconst… Ophthalmology            
+## # … with 145 more rows</code></pre>
+<div id="wrangling-discussion" class="section level4">
+<h4>Wrangling Discussion</h4>
+<p>Summary statistics were calculated for each of the numeric variables present in the dataset. It is important to note that most of these summary statistics were found after excluding subspecialties (using the filter function). This was done because many of the subspecialties are extremely small in scale and therefore serve as misleading outliers when the counts were used to create ratios.</p>
+<p>In Block A, the maximum and minimum number of programs for each specialty were found. Family medicine had the most programs at 671, while Osteopathic neuromusculoskeltal medicine had the least at 19.</p>
+<p>In Block B, the ratio of the workforce that self reported as female was found to be 0.438. This is interesting when compared to statistics showing that greater than 50% of medical students are female.</p>
+<p>In Block C, the specialties with the highest female to male ratios were found. As expected, Obstetrics and gynecology had the highest female to male ratio at nearly a 5 to 1 rate. Allergy and immunology and Pediatrics followed Ob/Gyn both at approximately a 2.5 to 1 rate.</p>
+<p>In Block D, the specialties with the highest male to female ratios were found. Orthopedic surgery had the highest male to female ratio at 5.60, making it the least sexually diverse specialty. Neurosurgery and Interventional radiology followed close behind Ortho at 4.74 and 4.47, respectively. Interestingly, the specialties that ranked second and third in the highest female to male ratio had a much smaller ratio than the second and third ranked specialties for the male to female ratio, reflecting the majority of residents being male discussed in B.</p>
+<p>In Block E, the specialties with the highest proportion of US MD’s were found. The top ten results are displayed above. Radiation oncology, plastic surgery, and otolaryngology had the highest proportion of US MD’s at 0.957, 0.946, and 0.922, respectively. One might assume the most competitive specialties to have the highest proportion of MD’s as that degree is generally considered the most difficult to obtain, therefore making those applicants more competitvely advantaged in the resiedency match. Following this reasoning, Radiation oncology as the top result was unexpected as it does not consistently rank in the 5 most competitive specialties according to NBME match data.</p>
+<p>In Block F, the standard deviation of total residents asfound after grouping by specialty and degree. Internal medicine and surgery were found to have the highest standard deviations at 2387 and 2120, respectively. Obviously, this is not very informative other than showing how large the gap is between the amount of US MD’s in the system versus other types of degrees.</p>
+<p>In Block G, proportions for each degree and sex were made by using pivot_wide to create a variable out of each degree and sex, and then dividing the values by the total residents in each specialty. Then those proportions were used to create a correlation matrix. The extremely strong relationships to note are strong because they define each other. For example, when the proportion of males is very high, the proportion of females must be very low, indicating a strong negative relationship. The most interesting results indicate there is a positive correlation between males and US MDs and a negative correlation between males and other degree types while there is a negative correlation between females and US MDs and a positive correlation between females and other degree types.</p>
+<p>In Block H, the total number of residents were found after grouping by degree type. There were 85,612 US MDs, 32,686 IMGs, 21,927 Candian MDs, and 1 unknown.</p>
+<p>In Block I, the number of subspecialties for each specialty was found by grouping by specialty and then using n_distinct. Internal medicine had the most amount of subspecialties at 21, followed by pediatrics at 18.</p>
+<p>In Block J, the subspecialties with the fewest residents were found by grouping by subspecialty and then arranging by total residents. Clinical informatics (anesthesia), endovascular surgical neuroradiology (neurosurgery), brain injury medicine, endovascular surgical neuroradiology (neurology), chemical pathology, and neuromuscular medicine all only had 1 resident. These subspecialties seem to overlap in classification, however, so it is unclear how informative this is.</p>
+</div>
+</div>
+<div id="visualizations" class="section level1">
+<h1>Visualizations</h1>
+<pre class="r"><code>## Vis A: Correlation Heatmap
+cor_data %&gt;% as.data.frame %&gt;% rownames_to_column%&gt;%pivot_longer(-1) %&gt;%
+  ggplot(aes(rowname,name,fill=value))+geom_tile()+
+  geom_text(aes(label=round(value, 2)))+
+  xlab(&quot;&quot;)+ylab(&quot;&quot;)+ ggtitle(&quot;Vis A: Correlation Heatmap&quot;) +
+  scale_fill_gradient2(low=&quot;green&quot;,high=&quot;blue&quot;) +
+  theme(axis.text.x = element_text(angle = 45))+ 
+  theme( axis.text.x = element_text(vjust = .5)) </code></pre>
+<p><img src="/project1eab_v2_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## Vis B: Bar Chart of Proportion of US MDs by Specialty
+md_prop_df %&gt;% 
+  ggplot(aes(specialty.x, MD_Prop)) +
+  stat_summary(aes(fill = MD_Prop), fun.y = &quot;quantile&quot;, geom = &quot;bar&quot;) +
+  coord_flip() +
+  ggtitle(&quot;Vis B: Proportion of US MDs by Specialty&quot;) + 
+  scale_fill_gradient(low=&quot;#ffe991&quot;, high=&quot;#ff4000&quot;) + theme_minimal() +
+  theme(legend.title = element_blank()) </code></pre>
+<p><img src="/project1eab_v2_files/figure-html/unnamed-chunk-5-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## Vis C: Scatterplot of Proportion MD and Proportion Male
+c_df &lt;- ds_join %&gt;%  
+  filter(specialty.x == subspecialty, Sex == &quot;Male&quot;, Degree == &quot;US.MD&quot;) %&gt;% distinct() %&gt;%
+  pivot_wider( names_from = Sex, values_from = Count_Sex ) %&gt;% 
+  pivot_wider(names_from = Degree, values_from = Count_degree) %&gt;% 
+  mutate(Male_Prop = Male/Total.Residents.x) %&gt;% 
+  mutate(MD_Prop = US.MD/Total.Residents.x)
+
+c_df %&gt;% ggplot(aes(Male_Prop, MD_Prop)) + 
+  geom_point(aes(color = Total.Programs), size = 3) + 
+  scale_color_continuous(low = &quot;purple&quot;, high = &quot;green&quot;)  + 
+  ggtitle(&quot;Proportion of Males vs. Proportion of MDs by Specialty and Total Programs&quot;) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n=20)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n=20))</code></pre>
+<p><img src="/project1eab_v2_files/figure-html/unnamed-chunk-5-3.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="visualization-discussion" class="section level4">
+<h4>Visualization Discussion</h4>
+<p>In Vis A, a correlation heatmap was created from the correlation matrix created in Wrangling Block G. As noted previously, many of the associations in that matrix are by definition determined by another variable in the matrix so they would be expected to exhibit highly correlated results with each other. As noted in the discussion previously, a high incidence of males was correlated positively with MDs and negatively with other degree types. Inversely, a high incidence of females was correlated negatively with MDs and positively with other degree types.</p>
+<p>In Vis B, a bar chart was created that shows the proportion of MDs by specialty. A summary function was used to fill in the bars with a color gradient corresponding to how they ranked among all the other specialties. The darkest orange represents specialties with the highest proportion of MDs while the lightest yellow represents the lowest proportion of MDs. The plot indicates most specialties have a population of residents that are mostly MDs.</p>
+<p>In Vis C, a scatterplot of the proportion of males and the proportion of MDs in each specialty. The points were mapped to be colored according to number of programs available for that specialty. From the plot, it is apparent the largest specialties fall right in the middle on both proportion of males and proportion of MDs, while most other specialties gravitate towards favoring MDs.</p>
+</div>
+</div>
+<div id="cluster-analysis" class="section level1">
+<h1>Cluster Analysis</h1>
+<pre class="r"><code>library(cluster)
+
+##Creating the Cluster Dataframe
+clust_df &lt;- ds_join %&gt;% filter(specialty.x == subspecialty)%&gt;%  pivot_wider(names_from = Sex, values_from = Count_Sex) %&gt;% pivot_wider(names_from = Degree, values_from = Count_degree)  %&gt;% select(c(Female, US.MD, Total.Programs, specialty.x))
+
+#Determining Optimal Number of Clusters
+sil_width&lt;-vector()
+for(i in 2:10) {
+  pam_fit &lt;- clust_df%&gt;% select(-specialty.x) %&gt;% pam(i)
+  sil_width[i] &lt;- pam_fit$silinfo$avg.width
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name=&quot;k&quot;,breaks=1:10)</code></pre>
+<p><img src="/project1eab_v2_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>##Creating Clusters
+ds_pam &lt;- clust_df%&gt;% select(-specialty.x) %&gt;% pam(3)
+ds_pam</code></pre>
+<pre><code>## Medoids:
+##      ID Female US.MD Total.Programs
+## [1,] 21    366   852             81
+## [2,]  4   2770  5484            247
+## [3,]  6  11315 12860            545
+## Clustering vector:
+##  [1] 1 2 1 2 2 3 1 1 1 1 1 2 1 1 1 1 1 2 1 1 1 1 2 1 1 2 1 1 1 1
+## Objective function:
+##    build     swap 
+## 993.1101 968.9584 
+## 
+## Available components:
+##  [1] &quot;medoids&quot;    &quot;id.med&quot;     &quot;clustering&quot; &quot;objective&quot;  &quot;isolation&quot; 
+##  [6] &quot;clusinfo&quot;   &quot;silinfo&quot;    &quot;diss&quot;       &quot;call&quot;       &quot;data&quot;</code></pre>
+<pre class="r"><code>clust_final&lt;-clust_df%&gt;%mutate(cluster=as.factor(ds_pam$clustering))
+
+confmat&lt;-clust_final%&gt;%group_by(specialty.x)%&gt;% count(cluster)%&gt;%arrange(desc(n))%&gt;%
+  pivot_wider(names_from=&quot;cluster&quot;,values_from=&quot;n&quot;,values_fill = list(&#39;n&#39;=0))
+confmat</code></pre>
+<pre><code>## # A tibble: 30 x 4
+## # Groups:   specialty.x [30]
+##    specialty.x                             `1`   `2`   `3`
+##    &lt;chr&gt;                                 &lt;int&gt; &lt;int&gt; &lt;int&gt;
+##  1 Allergy and immunology                    1     0     0
+##  2 Anesthesiology                            0     1     0
+##  3 Child neurology                           1     0     0
+##  4 Dermatology                               1     0     0
+##  5 Emergency medicine                        0     1     0
+##  6 Family medicine                           0     1     0
+##  7 Internal medicine                         0     0     1
+##  8 Internal medicine/Pediatrics              1     0     0
+##  9 Interventional radiology - integrated     1     0     0
+## 10 Medical genetics and genomics             1     0     0
+## # … with 20 more rows</code></pre>
+<pre class="r"><code>##Evaluating Clusters
+ds_pam$silinfo$avg.width</code></pre>
+<pre><code>## [1] 0.7207176</code></pre>
+<pre class="r"><code>ggplot(clust_final, aes(x=Female,y=US.MD, color=cluster, size = Total.Programs))+
+  geom_point() + 
+  ggtitle(&quot;PAM Clustering of Females and US MDs by Specialty&quot;)</code></pre>
+<p><img src="/project1eab_v2_files/figure-html/unnamed-chunk-6-2.png" width="672" style="display: block; margin: auto;" /></p>
+<div id="cluster-analysis-discussion" class="section level4">
+<h4>Cluster Analysis Discussion</h4>
+<p>The variables used for this cluster analysis are the female count and MD count for each specialty. These variables were created from by using the pivot_wider function. Using the silhouette width method, the ideal amount of clusters was found to be 3. The clusters were created and the resulting measure of silhouette width was 0.72. This indicates a strong clustering amongst these variables. A scatterplot was created plotting females and US MDs colored by cluster and sized by Total Programs. From this graphic, the clustering of the data is obviously strong.</p>
+</div>
+</div>
+
+              <hr>
+              <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div>
+            </div>
+          </div>
+          <hr>
+        <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+        </div>
+      </div>
+      
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

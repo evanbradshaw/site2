@@ -1,0 +1,254 @@
+---
+title: "Project 2"
+author: "Evan Bradshaw"
+date: "3/3/2020"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+# Introduction
+
+
+```{r}
+library(tidyverse)
+library(vegan)
+library(lmtest)
+library(sandwich)
+library(plotROC)
+library(glmnet)
+data_1 <- read.csv("~/Documents/University of Texas/Computational Bio/Project2data.csv")
+glimpse(data_1)
+```
+
+The dataset used for this analysis was obtained from the Association of American Medical Colleges (AAMC) website. The dataset lists the number of students at each MD granting medical school in the United States from 2015 through 2020. The numeric variables include number of men, women, and total students at each school. The categorical variables include the state the school is located in, the school name, and the schoolyear the data corresponds to. The binary variable indicates whether the school is public (1) or private (0). After tidying the data in Excel (the formatting of the original dataset made tidying in R very complicated), the final data set has 765 total observations and 7 variables.
+
+# MANOVA
+```{r}
+# Multivariate Normailty Assumption
+ggplot(data_1, aes(x = Men, y = Women, color = All)) + geom_point() + geom_density_2d()  +facet_wrap(~Schoolyear)+ggtitle("Plot 1")
+# Equal Covariance Assumption
+covman <- data_1%>% na.omit() %>%group_by(Schoolyear)%>%do(covs=cov(.[5:7]))
+for(i in 1:3){print(as.character(covman$Schoolyear[i])); print(covman$covs[i])}
+#MANOVA Test
+manova <- manova(cbind(Men,Women,All)~Schoolyear, data=data_1)
+summary(manova)
+#Univariate ANOVAs
+summary.aov(manova)
+#Table_A
+Table_A <- data_1 %>% group_by(Schoolyear) %>% summarize(Men = mean(Men, na.rm=T), Women = mean(Women, na.rm=T), All = mean(All, na.rm=T))
+Table_A
+#Post Hoc t Tests
+pairwise.t.test(data_1$Men, data_1$Schoolyear, p.adj="none")
+pairwise.t.test(data_1$Women, data_1$Schoolyear, p.adj="none")
+pairwise.t.test(data_1$All, data_1$Schoolyear, p.adj="none")
+#Type-I Error Rate
+1-0.95^34
+# Bonferroni Correction
+0.05/34
+```
+#### MANOVA Discussion
+
+A MANOVA was conducted to find the effect of the Schoolyear (2015 thru 2020) on three dependent variables (number of enrolled Men, Women, and total). Multivariate density plots (Plot 1) indicated no significant departure from multivariate normality. Analysis of covariance for each group indicated relative homogeneity between each schoolyear. The assumption of independent observation is in question because the "All" variable is a sum of the other two dependant variables. This fact also calls the assumption of multicollinearity into question. The analysis proceeded despite these issues with the assumptions.
+
+Each determination of significance was made in accordance to a bonferroni correction, displayed at the end of the analysis.
+
+There was a significant difference found among schoolyears for one of the dependent variables, Pillai trace = 0.12, F = 7.89, p < 0.0001.
+
+Univariate ANOVAs for each dependent variable were done as a follow-up to the MANOVA test. None of the dependent variables (Men, Women, All) were found to be significant upon ANOVA testing (respectively, F = 0.77, p = 0.543; F = 0.62, p = 0.651; F = 0.0147, p = 0.99). This indicates that the interaction of the dependent variables across groups is significant, but not the dependent variables themselves across groups. This makes sense when the means of each dependent variable in each schoolyear is found (see Table A). The average number of Men slightly decreases each year but not by a lot. The average number of women increases each year, but also not by a lot. This might indicate that the interaction of men decreasing and women increasing is significant, but not their individual change year over year. Further testing would be required to verify.
+
+Despite the results of the ANOVA tests, a post hoc analysis was performed conducting pairwise t tests to determine if a particular Schoolyear differed by the dependent variables. None of the tests found a significant difference in the dependent variable across Schoolyears.
+
+In total, 34 tests were conducted in this analysis. This indicates a Type-I error rate of 0.825 and a bonferroni correction resulting in a new alpha value of 0.0015. 
+
+# Randomization Test
+```{r}
+set.seed(123)
+#Compute distances
+data_2 <- data_1 %>% na.omit()
+dists <- data_2%>%select(Men, Women) %>%dist()
+#PERMANOVA Test
+adonis(dists~Schoolyear,data=data_2)
+#Null Distribution Visual
+ggplot(data=NULL, aes(dists)) + 
+  geom_histogram(bins=30) + 
+  geom_vline(xintercept = quantile(dists,0.95), colour = "red")+
+  ggtitle("Plot 2")
+```
+#### Randomization Test Discussion
+
+A PERMANOVA test was selected as the randomization test for this analysis. The effect of Schoolyear (2015 thru 2020) on two dependent variables, being number of men and women enrolled in US MD medical schools was evaluated. 
+
+The null hypothesis for this test is that the multivariate means of all groups are equal. The alternative hypothesis is that the multivariate means of all groups are not equal.
+
+The PERMANOVA (using the adonis function with 999 permutations) resulted in F = 0.702 and p = 0.563, indicating that the null hypothesis cannot be rejected and that the meultivariate means between groups are equal.
+
+
+# Linear Regression
+```{r}
+#Mean Centering
+data_1$Women_c <- data_1$Women - mean(data_1$Women,na.rm=T)
+#Linear Regression
+lm_fit <- lm(Men~Women_c*Public, data=data_1)
+summary(lm_fit)
+#Assumptions
+lm_resids <- lm_fit$residuals; lm_fitvals <- lm_fit$fitted.values
+ggplot()+geom_point(aes(lm_fitvals,lm_resids))+geom_hline(yintercept=0, color="green")+ggtitle("Plot 3")
+ggplot()+geom_histogram(aes(lm_resids), bins=20)+ggtitle("Plot 4")
+ggplot()+geom_qq(aes(sample=lm_resids))+geom_qq_line(aes(sample=lm_resids))+ggtitle("Plot 5")
+#Visual
+ggplot(data_1, aes(Women_c, Men, color=Public)) + geom_point() + geom_smooth(method="lm", se=FALSE, fullrange=TRUE, color="red")+ggtitle("Plot 6")
+#Robust SE Regression
+coeftest(lm_fit, vcov. = vcovHC(lm_fit))
+```
+
+#### Linear Regression Discussion
+
+A linear regression was created predicting the number of men enrolled in US MD medical schools from number of women enrolled, whether or not the school was public, and the interaction between these variables.
+
+In the residual plot (Plot 3), the assumptions of linearity and homoskedasticity seem to be met. In the histogram of residuals (Plot 4) and the qq line plot (Plot 5), normality seems to be met. The analysis proceeded.
+
+The intercept of the model indicates the predicted number of men enrolled for an average number of women and private schools is 304. In private institutions, there was an increase in 0.97 women for every increase of 1 enrolled man on average (significant, t=35.38, p<0.0001). In public institutions with an average number of women enrolled, the number of men enrolled is 13.85 persons more than in private institutions (significant, t=3.36, p=0.0008). Finally, the slope for number of women to men is 0.059 persons greater for public schools compared to private ones (not significant, t=1.74, p=0.0821). The proportion of variance explained by the model (R-squared) is 0.8399.
+
+The regression was recomputed with robust standard errors. In the case of both variables and the interaction, the standard error decreased. Number of women was still a significant predictor for number of men (p<0.0001), the type of institution was still a significant predictor for number of men (p=0.0003), and the interaction between number of women and institution type was still (narrowly) not a significant predictor for number of men (p=0.0723).
+
+
+# Bootstrapped Linear Regression
+```{r}
+set.seed(123)
+#Bootstrapping
+samp_vec<-replicate(5000,   {
+  boot_dat <- sample_frac(data_1, replace=T)
+  boot_fit <- lm(Men~Women*Public, data=boot_dat)
+  coef(boot_fit)
+})
+##Bootstrapped SEs
+samp_vec %>% t %>% as.data.frame %>% summarize_all(sd)
+##Bootsrapped CIs
+samp_vec %>% t %>% as.data.frame %>% gather %>% group_by(key) %>% summarize(lower=quantile(value,.025), upper=quantile(value,.975))
+```
+
+#### Bootstrapped Linear Regression Discussion
+The linear regression model from above was bootstrapped with a sample of 5000. The bootstrapped standard error for the Women variable and the interaction was about the same as the robust standard error. The boostrapped standard error for the Public variable, however, increased a lot to a value of 8.51 (while the robust SE was 3.82).
+
+# Logistic Regression
+```{r}
+#Logistic Regression
+log_fit <- glm(Public~Men+Women,data=data_1,family="binomial")
+summary(log_fit)
+exp(coef(log_fit))
+#Confusion Matrix
+log_probs <- predict(log_fit, type="response")
+log_preds <- ifelse(log_probs>.5,1,0)
+table(prediction=log_preds, truth=data_2$Public)%>%addmargins
+#Accuracy
+(11+414)/738
+#Sensitivity or TPR
+414/445
+#Specificity or TNR
+11/293
+#Precision or PPV
+414/696
+#Density Plot
+data_2$logit<-predict(log_fit,type = "link")
+data_2<-data_2%>%mutate(Public2=as.character(Public))
+data_2%>%ggplot()+geom_density(aes(logit,color = Public2,fill = Public2), alpha=0.5)+ggtitle("Plot 7")
+#ROC Plot
+ROCplot <- ggplot(data_2)+geom_roc(aes(d=Public,m=log_probs), n.cuts=0) +ggtitle("Plot 8")
+ROCplot
+calc_auc(ROCplot)
+#CLass_diag Function
+class_diag <- function(probs,truth){
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),truth)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,auc)
+}
+#10 Fold Cross Validation
+set.seed(123)
+k=10
+cv_data <- data_2[sample(nrow(data_2)),]
+folds <- cut(seq(1:nrow(data_2)),breaks=k,labels=F)
+
+diags<-NULL
+for(i in 1:k){
+  train<-data_2[folds!=i,]
+  test<-data_2[folds==i,]
+  truth<-test$Public
+  
+  cv_fit<-glm(Public~Men+Women,data=data_2,family="binomial")
+  cv_probs<-predict(cv_fit,newdata=test,type="response")
+  diags<-rbind(diags,class_diag(cv_probs,truth))
+}
+#10 Fold CV Findings
+summarize_all(diags, mean)
+```
+#### Logistic Regression Discussion
+
+A logistic regression was created predicting if a school was public from number of men and women enrolled. The model found that holding number of women constant, going up by 1 enrolled man multiplies odds by a factor of 1.0047 (significant, z=3.312, p=0.0009). The model also found that holding number of men constant, going up by 1 enrolled woman multiplies the odds by a factor of 0.9951 (z=-3.218, p=0.0013).
+
+A confusion matrix was created with predicted values from the model. The accuracy was found to be 0.576, the sensitivity was found to be 0.930, the specificity was found to be 0.037, and the precision was found to be 0.595.
+
+In Plot 7, a density plot of the logit-odds was created, with 0 representing Private schools and 1 representing Public schools.
+
+The AUC of the ROC plot (Plot 8) was found to be 0.572, indicating very poor predictions by the model.
+
+
+# LASSO Regression
+```{r}
+#Creating Matrices
+y<-as.matrix(data_2$Public)
+x<-model.matrix(Public~Men+Women,data=data_2)[,-1]
+x<-scale(x)
+#LASSO
+cv<-cv.glmnet(x,y,family="binomial")
+lasso<-glmnet(x,y,family="binomial",lambda=cv$lambda.1se)
+coef(lasso)
+#LASSO CV
+set.seed(123)
+k=10
+cvlass_data <- data_2[sample(nrow(data_2)),]
+folds <- cut(seq(1:nrow(data_2)),breaks=k,labels=F)
+
+diags<-NULL
+for(i in 1:k){
+  train<-data_2[folds!=i,]
+  test<-data_2[folds==i,]
+  truth<-test$Public
+  
+  cvlass_fit<-glm(Public~Men+Women,data=data_2,family="binomial")
+  cvlass_probs<-predict(cvlass_fit,newdata=test,type="response")
+  diags<-rbind(diags,class_diag(cvlass_probs,truth))
+}
+#10 Fold CV Findings
+summarize_all(diags, mean)
+```
+
+A LASSO Model was created predicting the institution type from number of men and women enrolled. The only predictor variable retained was number of men with an s0 = 5.8e-17 (effectively 0). 
+
+A 10 fold cross validation was conducted with the LASSO model. The accuracy was found to be 0.576, which is the same accuracy found in the logistic regression and the following cross validation on that model.
+
+
+
+

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Evan Bradshaw" />
+    <meta name="description" content="Describe your website">
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Project 2</title>
+    <meta name="generator" content="Hugo 0.70.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/blog/">ABOUT ME</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/project2eab/">Project 2</a></strong>
+          </h3>
+        </div>
+        <div class="blog-title">
+          <h4>
+          January 1, 0001
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<pre class="r"><code>library(tidyverse)
+library(vegan)
+library(lmtest)
+library(sandwich)
+library(plotROC)
+library(glmnet)
+data_1 &lt;- read.csv(&quot;~/Documents/University of Texas/Computational Bio/Project2data.csv&quot;)
+glimpse(data_1)</code></pre>
+<pre><code>## Observations: 765
+## Variables: 7
+## $ State          &lt;fct&gt; AL, AL, AR, AZ, AZ, CA, CA, CA, CA, CA, CA, CA, CA, CA…
+## $ Medical_School &lt;fct&gt; Alabama, South Alabama, Arkansas, Arizona, Arizona Pho…
+## $ Public         &lt;int&gt; 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, …
+## $ Schoolyear     &lt;fct&gt; 2015-2016, 2015-2016, 2015-2016, 2015-2016, 2015-2016,…
+## $ Men            &lt;int&gt; 434, 184, 444, 269, 115, NA, 41, 412, 423, 246, 197, 2…
+## $ Women          &lt;int&gt; 346, 120, 260, 288, 128, NA, 19, 316, 367, 237, 262, 2…
+## $ All            &lt;int&gt; 780, 304, 704, 557, 243, NA, 60, 728, 790, 483, 459, 4…</code></pre>
+<p>The dataset used for this analysis was obtained from the Association of American Medical Colleges (AAMC) website. The dataset lists the number of students at each MD granting medical school in the United States from 2015 through 2020. The numeric variables include number of men, women, and total students at each school. The categorical variables include the state the school is located in, the school name, and the schoolyear the data corresponds to. The binary variable indicates whether the school is public (1) or private (0). After tidying the data in Excel (the formatting of the original dataset made tidying in R very complicated), the final data set has 765 total observations and 7 variables.</p>
+</div>
+<div id="manova" class="section level1">
+<h1>MANOVA</h1>
+<pre class="r"><code># Multivariate Normailty Assumption
+ggplot(data_1, aes(x = Men, y = Women, color = All)) + geom_point() + geom_density_2d()  +facet_wrap(~Schoolyear)+ggtitle(&quot;Plot 1&quot;)</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Equal Covariance Assumption
+covman &lt;- data_1%&gt;% na.omit() %&gt;%group_by(Schoolyear)%&gt;%do(covs=cov(.[5:7]))
+for(i in 1:3){print(as.character(covman$Schoolyear[i])); print(covman$covs[i])}</code></pre>
+<pre><code>## [1] &quot;2015-2016&quot;
+## [[1]]
+##            Men    Women      All
+## Men   19147.85 14915.87 34063.72
+## Women 14915.87 13910.57 28826.44
+## All   34063.72 28826.44 62890.16
+## 
+## [1] &quot;2016-2017&quot;
+## [[1]]
+##            Men    Women      All
+## Men   19166.12 15394.94 34561.06
+## Women 15394.94 14649.92 30044.86
+## All   34561.06 30044.86 64605.92
+## 
+## [1] &quot;2017-2018&quot;
+## [[1]]
+##            Men    Women      All
+## Men   18620.25 15476.88 34097.38
+## Women 15476.88 15047.37 30524.17
+## All   34097.38 30524.17 64621.77</code></pre>
+<pre class="r"><code>#MANOVA Test
+manova &lt;- manova(cbind(Men,Women,All)~Schoolyear, data=data_1)
+summary(manova)</code></pre>
+<pre><code>##             Df  Pillai approx F num Df den Df    Pr(&gt;F)    
+## Schoolyear   4 0.12385   7.8908     12   2199 1.342e-14 ***
+## Residuals  733                                             
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>#Univariate ANOVAs
+summary.aov(manova)</code></pre>
+<pre><code>##  Response Men :
+##              Df   Sum Sq Mean Sq F value Pr(&gt;F)
+## Schoolyear    4    57867   14467  0.7725 0.5433
+## Residuals   733 13727589   18728               
+## 
+##  Response Women :
+##              Df   Sum Sq Mean Sq F value Pr(&gt;F)
+## Schoolyear    4    38306  9576.6  0.6164 0.6509
+## Residuals   733 11387332 15535.2               
+## 
+##  Response All :
+##              Df   Sum Sq Mean Sq F value Pr(&gt;F)
+## Schoolyear    4     3860     965  0.0147 0.9996
+## Residuals   733 48171302   65718               
+## 
+## 27 observations deleted due to missingness</code></pre>
+<pre class="r"><code>#Table_A
+Table_A &lt;- data_1 %&gt;% group_by(Schoolyear) %&gt;% summarize(Men = mean(Men, na.rm=T), Women = mean(Women, na.rm=T), All = mean(All, na.rm=T))
+Table_A</code></pre>
+<pre><code>## # A tibble: 5 x 4
+##   Schoolyear   Men Women   All
+##   &lt;fct&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 2015-2016   324.  286.  610.
+## 2 2016-2017   318.  290.  608.
+## 3 2017-2018   315.  296.  611.
+## 4 2018-2019   305.  299.  604.
+## 5 2019-2020   300.  306.  606.</code></pre>
+<pre class="r"><code>#Post Hoc t Tests
+pairwise.t.test(data_1$Men, data_1$Schoolyear, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data_1$Men and data_1$Schoolyear 
+## 
+##           2015-2016 2016-2017 2017-2018 2018-2019
+## 2016-2017 0.72      -         -         -        
+## 2017-2018 0.56      0.82      -         -        
+## 2018-2019 0.24      0.41      0.55      -        
+## 2019-2020 0.13      0.24      0.35      0.73     
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(data_1$Women, data_1$Schoolyear, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data_1$Women and data_1$Schoolyear 
+## 
+##           2015-2016 2016-2017 2017-2018 2018-2019
+## 2016-2017 0.78      -         -         -        
+## 2017-2018 0.49      0.68      -         -        
+## 2018-2019 0.36      0.52      0.82      -        
+## 2019-2020 0.16      0.25      0.47      0.62     
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(data_1$All, data_1$Schoolyear, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data_1$All and data_1$Schoolyear 
+## 
+##           2015-2016 2016-2017 2017-2018 2018-2019
+## 2016-2017 0.96      -         -         -        
+## 2017-2018 0.98      0.94      -         -        
+## 2018-2019 0.86      0.90      0.83      -        
+## 2019-2020 0.91      0.95      0.88      0.95     
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>#Type-I Error Rate
+1-0.95^34</code></pre>
+<pre><code>## [1] 0.8251754</code></pre>
+<pre class="r"><code># Bonferroni Correction
+0.05/34</code></pre>
+<pre><code>## [1] 0.001470588</code></pre>
+<div id="manova-discussion" class="section level4">
+<h4>MANOVA Discussion</h4>
+<p>A MANOVA was conducted to find the effect of the Schoolyear (2015 thru 2020) on three dependent variables (number of enrolled Men, Women, and total). Multivariate density plots (Plot 1) indicated no significant departure from multivariate normality. Analysis of covariance for each group indicated relative homogeneity between each schoolyear. The assumption of independent observation is in question because the “All” variable is a sum of the other two dependant variables. This fact also calls the assumption of multicollinearity into question. The analysis proceeded despite these issues with the assumptions.</p>
+<p>Each determination of significance was made in accordance to a bonferroni correction, displayed at the end of the analysis.</p>
+<p>There was a significant difference found among schoolyears for one of the dependent variables, Pillai trace = 0.12, F = 7.89, p &lt; 0.0001.</p>
+<p>Univariate ANOVAs for each dependent variable were done as a follow-up to the MANOVA test. None of the dependent variables (Men, Women, All) were found to be significant upon ANOVA testing (respectively, F = 0.77, p = 0.543; F = 0.62, p = 0.651; F = 0.0147, p = 0.99). This indicates that the interaction of the dependent variables across groups is significant, but not the dependent variables themselves across groups. This makes sense when the means of each dependent variable in each schoolyear is found (see Table A). The average number of Men slightly decreases each year but not by a lot. The average number of women increases each year, but also not by a lot. This might indicate that the interaction of men decreasing and women increasing is significant, but not their individual change year over year. Further testing would be required to verify.</p>
+<p>Despite the results of the ANOVA tests, a post hoc analysis was performed conducting pairwise t tests to determine if a particular Schoolyear differed by the dependent variables. None of the tests found a significant difference in the dependent variable across Schoolyears.</p>
+<p>In total, 34 tests were conducted in this analysis. This indicates a Type-I error rate of 0.825 and a bonferroni correction resulting in a new alpha value of 0.0015.</p>
+</div>
+</div>
+<div id="randomization-test" class="section level1">
+<h1>Randomization Test</h1>
+<pre class="r"><code>set.seed(123)
+#Compute distances
+data_2 &lt;- data_1 %&gt;% na.omit()
+dists &lt;- data_2%&gt;%select(Men, Women) %&gt;%dist()
+#PERMANOVA Test
+adonis(dists~Schoolyear,data=data_2)</code></pre>
+<pre><code>## 
+## Call:
+## adonis(formula = dists ~ Schoolyear, data = data_2) 
+## 
+## Permutation: free
+## Number of permutations: 999
+## 
+## Terms added sequentially (first to last)
+## 
+##             Df SumsOfSqs MeanSqs F.Model      R2 Pr(&gt;F)
+## Schoolyear   4     96174   24043 0.70173 0.00381   0.58
+## Residuals  733  25114920   34263         0.99619       
+## Total      737  25211094                 1.00000</code></pre>
+<pre class="r"><code>#Null Distribution Visual
+ggplot(data=NULL, aes(dists)) + 
+  geom_histogram(bins=30) + 
+  geom_vline(xintercept = quantile(dists,0.95), colour = &quot;red&quot;)+
+  ggtitle(&quot;Plot 2&quot;)</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" />
+#### Randomization Test Discussion</p>
+<p>A PERMANOVA test was selected as the randomization test for this analysis. The effect of Schoolyear (2015 thru 2020) on two dependent variables, being number of men and women enrolled in US MD medical schools was evaluated.</p>
+<p>The null hypothesis for this test is that the multivariate means of all groups are equal. The alternative hypothesis is that the multivariate means of all groups are not equal.</p>
+<p>The PERMANOVA (using the adonis function with 999 permutations) resulted in F = 0.702 and p = 0.563, indicating that the null hypothesis cannot be rejected and that the meultivariate means between groups are equal.</p>
+</div>
+<div id="linear-regression" class="section level1">
+<h1>Linear Regression</h1>
+<pre class="r"><code>#Mean Centering
+data_1$Women_c &lt;- data_1$Women - mean(data_1$Women,na.rm=T)
+#Linear Regression
+lm_fit &lt;- lm(Men~Women_c*Public, data=data_1)
+summary(lm_fit)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = Men ~ Women_c * Public, data = data_1)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -170.762  -30.828    0.049   32.728  192.519 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)    303.82766    3.20383  94.833  &lt; 2e-16 ***
+## Women_c          0.96736    0.02734  35.384  &lt; 2e-16 ***
+## Public          13.85161    4.12567   3.357 0.000827 ***
+## Women_c:Public   0.05912    0.03396   1.741 0.082149 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 54.83 on 734 degrees of freedom
+##   (27 observations deleted due to missingness)
+## Multiple R-squared:  0.8399, Adjusted R-squared:  0.8393 
+## F-statistic:  1284 on 3 and 734 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>#Assumptions
+lm_resids &lt;- lm_fit$residuals; lm_fitvals &lt;- lm_fit$fitted.values
+ggplot()+geom_point(aes(lm_fitvals,lm_resids))+geom_hline(yintercept=0, color=&quot;green&quot;)+ggtitle(&quot;Plot 3&quot;)</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot()+geom_histogram(aes(lm_resids), bins=20)+ggtitle(&quot;Plot 4&quot;)</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggplot()+geom_qq(aes(sample=lm_resids))+geom_qq_line(aes(sample=lm_resids))+ggtitle(&quot;Plot 5&quot;)</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-4-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#Visual
+ggplot(data_1, aes(Women_c, Men, color=Public)) + geom_point() + geom_smooth(method=&quot;lm&quot;, se=FALSE, fullrange=TRUE, color=&quot;red&quot;)+ggtitle(&quot;Plot 6&quot;)</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-4-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#Robust SE Regression
+coeftest(lm_fit, vcov. = vcovHC(lm_fit))</code></pre>
+<pre><code>## 
+## t test of coefficients:
+## 
+##                  Estimate Std. Error  t value  Pr(&gt;|t|)    
+## (Intercept)    303.827656   2.444927 124.2686 &lt; 2.2e-16 ***
+## Women_c          0.967355   0.018756  51.5747 &lt; 2.2e-16 ***
+## Public          13.851607   3.837294   3.6097 0.0003273 ***
+## Women_c:Public   0.059124   0.032856   1.7995 0.0723484 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<div id="linear-regression-discussion" class="section level4">
+<h4>Linear Regression Discussion</h4>
+<p>A linear regression was created predicting the number of men enrolled in US MD medical schools from number of women enrolled, whether or not the school was public, and the interaction between these variables.</p>
+<p>In the residual plot (Plot 3), the assumptions of linearity and homoskedasticity seem to be met. In the histogram of residuals (Plot 4) and the qq line plot (Plot 5), normality seems to be met. The analysis proceeded.</p>
+<p>The intercept of the model indicates the predicted number of men enrolled for an average number of women and private schools is 304. In private institutions, there was an increase in 0.97 women for every increase of 1 enrolled man on average (significant, t=35.38, p&lt;0.0001). In public institutions with an average number of women enrolled, the number of men enrolled is 13.85 persons more than in private institutions (significant, t=3.36, p=0.0008). Finally, the slope for number of women to men is 0.059 persons greater for public schools compared to private ones (not significant, t=1.74, p=0.0821). The proportion of variance explained by the model (R-squared) is 0.8399.</p>
+<p>The regression was recomputed with robust standard errors. In the case of both variables and the interaction, the standard error decreased. Number of women was still a significant predictor for number of men (p&lt;0.0001), the type of institution was still a significant predictor for number of men (p=0.0003), and the interaction between number of women and institution type was still (narrowly) not a significant predictor for number of men (p=0.0723).</p>
+</div>
+</div>
+<div id="bootstrapped-linear-regression" class="section level1">
+<h1>Bootstrapped Linear Regression</h1>
+<pre class="r"><code>set.seed(123)
+#Bootstrapping
+samp_vec&lt;-replicate(5000,   {
+  boot_dat &lt;- sample_frac(data_1, replace=T)
+  boot_fit &lt;- lm(Men~Women*Public, data=boot_dat)
+  coef(boot_fit)
+})
+##Bootstrapped SEs
+samp_vec %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd)</code></pre>
+<pre><code>##   (Intercept)      Women   Public Women:Public
+## 1    4.819154 0.01860986 8.508771   0.03241111</code></pre>
+<pre class="r"><code>##Bootsrapped CIs
+samp_vec %&gt;% t %&gt;% as.data.frame %&gt;% gather %&gt;% group_by(key) %&gt;% summarize(lower=quantile(value,.025), upper=quantile(value,.975))</code></pre>
+<pre><code>## # A tibble: 4 x 3
+##   key              lower  upper
+##   &lt;chr&gt;            &lt;dbl&gt;  &lt;dbl&gt;
+## 1 (Intercept)    8.34    27.3  
+## 2 Public       -19.8     13.7  
+## 3 Women          0.931    1.00 
+## 4 Women:Public  -0.00585  0.121</code></pre>
+<div id="bootstrapped-linear-regression-discussion" class="section level4">
+<h4>Bootstrapped Linear Regression Discussion</h4>
+<p>The linear regression model from above was bootstrapped with a sample of 5000. The bootstrapped standard error for the Women variable and the interaction was about the same as the robust standard error. The boostrapped standard error for the Public variable, however, increased a lot to a value of 8.51 (while the robust SE was 3.82).</p>
+</div>
+</div>
+<div id="logistic-regression" class="section level1">
+<h1>Logistic Regression</h1>
+<pre class="r"><code>#Logistic Regression
+log_fit &lt;- glm(Public~Men+Women,data=data_1,family=&quot;binomial&quot;)
+summary(log_fit)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Public ~ Men + Women, family = &quot;binomial&quot;, data = data_1)
+## 
+## Deviance Residuals: 
+##    Min      1Q  Median      3Q     Max  
+## -1.549  -1.329   0.895   1.015   1.348  
+## 
+## Coefficients:
+##              Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)  0.424047   0.196685   2.156 0.031086 *  
+## Men          0.004647   0.001403   3.312 0.000926 ***
+## Women       -0.004905   0.001524  -3.218 0.001290 ** 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 991.55  on 737  degrees of freedom
+## Residual deviance: 980.07  on 735  degrees of freedom
+##   (27 observations deleted due to missingness)
+## AIC: 986.07
+## 
+## Number of Fisher Scoring iterations: 4</code></pre>
+<pre class="r"><code>exp(coef(log_fit))</code></pre>
+<pre><code>## (Intercept)         Men       Women 
+##   1.5281341   1.0046581   0.9951068</code></pre>
+<pre class="r"><code>#Confusion Matrix
+log_probs &lt;- predict(log_fit, type=&quot;response&quot;)
+log_preds &lt;- ifelse(log_probs&gt;.5,1,0)
+table(prediction=log_preds, truth=data_2$Public)%&gt;%addmargins</code></pre>
+<pre><code>##           truth
+## prediction   0   1 Sum
+##        0    11  31  42
+##        1   282 414 696
+##        Sum 293 445 738</code></pre>
+<pre class="r"><code>#Accuracy
+(11+414)/738</code></pre>
+<pre><code>## [1] 0.5758808</code></pre>
+<pre class="r"><code>#Sensitivity or TPR
+414/445</code></pre>
+<pre><code>## [1] 0.9303371</code></pre>
+<pre class="r"><code>#Specificity or TNR
+11/293</code></pre>
+<pre><code>## [1] 0.03754266</code></pre>
+<pre class="r"><code>#Precision or PPV
+414/696</code></pre>
+<pre><code>## [1] 0.5948276</code></pre>
+<pre class="r"><code>#Density Plot
+data_2$logit&lt;-predict(log_fit,type = &quot;link&quot;)
+data_2&lt;-data_2%&gt;%mutate(Public2=as.character(Public))
+data_2%&gt;%ggplot()+geom_density(aes(logit,color = Public2,fill = Public2), alpha=0.5)+ggtitle(&quot;Plot 7&quot;)</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#ROC Plot
+ROCplot &lt;- ggplot(data_2)+geom_roc(aes(d=Public,m=log_probs), n.cuts=0) +ggtitle(&quot;Plot 8&quot;)
+ROCplot</code></pre>
+<p><img src="/project2eab_files/figure-html/unnamed-chunk-6-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>calc_auc(ROCplot)</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.5718449</code></pre>
+<pre class="r"><code>#CLass_diag Function
+class_diag &lt;- function(probs,truth){
+  tab&lt;-table(factor(probs&gt;.5,levels=c(&quot;FALSE&quot;,&quot;TRUE&quot;)),truth)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+  if(is.numeric(truth)==FALSE &amp; is.logical(truth)==FALSE) truth&lt;-as.numeric(truth)-1
+  ord&lt;-order(probs, decreasing=TRUE)
+  probs &lt;- probs[ord]; truth &lt;- truth[ord]
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  dup&lt;-c(probs[-1]&gt;=probs[-length(probs)], FALSE)
+  TPR&lt;-c(0,TPR[!dup],1); FPR&lt;-c(0,FPR[!dup],1)
+  n &lt;- length(TPR)
+  auc&lt;- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,auc)
+}
+#10 Fold Cross Validation
+set.seed(123)
+k=10
+cv_data &lt;- data_2[sample(nrow(data_2)),]
+folds &lt;- cut(seq(1:nrow(data_2)),breaks=k,labels=F)
+
+diags&lt;-NULL
+for(i in 1:k){
+  train&lt;-data_2[folds!=i,]
+  test&lt;-data_2[folds==i,]
+  truth&lt;-test$Public
+  
+  cv_fit&lt;-glm(Public~Men+Women,data=data_2,family=&quot;binomial&quot;)
+  cv_probs&lt;-predict(cv_fit,newdata=test,type=&quot;response&quot;)
+  diags&lt;-rbind(diags,class_diag(cv_probs,truth))
+}
+#10 Fold CV Findings
+summarize_all(diags, mean)</code></pre>
+<pre><code>##         acc     sens       spec       ppv       auc
+## 1 0.5758608 0.929671 0.03678663 0.5942703 0.5742475</code></pre>
+<div id="logistic-regression-discussion" class="section level4">
+<h4>Logistic Regression Discussion</h4>
+<p>A logistic regression was created predicting if a school was public from number of men and women enrolled. The model found that holding number of women constant, going up by 1 enrolled man multiplies odds by a factor of 1.0047 (significant, z=3.312, p=0.0009). The model also found that holding number of men constant, going up by 1 enrolled woman multiplies the odds by a factor of 0.9951 (z=-3.218, p=0.0013).</p>
+<p>A confusion matrix was created with predicted values from the model. The accuracy was found to be 0.576, the sensitivity was found to be 0.930, the specificity was found to be 0.037, and the precision was found to be 0.595.</p>
+<p>In Plot 7, a density plot of the logit-odds was created, with 0 representing Private schools and 1 representing Public schools.</p>
+<p>The AUC of the ROC plot (Plot 8) was found to be 0.572, indicating very poor predictions by the model.</p>
+</div>
+</div>
+<div id="lasso-regression" class="section level1">
+<h1>LASSO Regression</h1>
+<pre class="r"><code>#Creating Matrices
+y&lt;-as.matrix(data_2$Public)
+x&lt;-model.matrix(Public~Men+Women,data=data_2)[,-1]
+x&lt;-scale(x)
+#LASSO
+cv&lt;-cv.glmnet(x,y,family=&quot;binomial&quot;)
+lasso&lt;-glmnet(x,y,family=&quot;binomial&quot;,lambda=cv$lambda.1se)
+coef(lasso)</code></pre>
+<pre><code>## 3 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                       s0
+## (Intercept) 4.179017e-01
+## Men         5.800959e-17
+## Women       .</code></pre>
+<pre class="r"><code>#LASSO CV
+set.seed(123)
+k=10
+cvlass_data &lt;- data_2[sample(nrow(data_2)),]
+folds &lt;- cut(seq(1:nrow(data_2)),breaks=k,labels=F)
+
+diags&lt;-NULL
+for(i in 1:k){
+  train&lt;-data_2[folds!=i,]
+  test&lt;-data_2[folds==i,]
+  truth&lt;-test$Public
+  
+  cvlass_fit&lt;-glm(Public~Men+Women,data=data_2,family=&quot;binomial&quot;)
+  cvlass_probs&lt;-predict(cvlass_fit,newdata=test,type=&quot;response&quot;)
+  diags&lt;-rbind(diags,class_diag(cvlass_probs,truth))
+}
+#10 Fold CV Findings
+summarize_all(diags, mean)</code></pre>
+<pre><code>##         acc     sens       spec       ppv       auc
+## 1 0.5758608 0.929671 0.03678663 0.5942703 0.5742475</code></pre>
+<p>A LASSO Model was created predicting the institution type from number of men and women enrolled. The only predictor variable retained was number of men with an s0 = 5.8e-17 (effectively 0).</p>
+<p>A 10 fold cross validation was conducted with the LASSO model. The accuracy was found to be 0.576, which is the same accuracy found in the logistic regression and the following cross validation on that model.</p>
+</div>
+
+              <hr>
+              <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div>
+            </div>
+          </div>
+          <hr>
+        <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+        </div>
+      </div>
+      
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>
