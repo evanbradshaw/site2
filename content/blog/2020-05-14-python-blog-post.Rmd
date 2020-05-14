@@ -22,9 +22,11 @@ string1="ATGGCAATAACCCCCCGTTTCTACTTCTAGAGGAGAAAAGTATTGACATGAGCGCTCCCGGCACAAGGGCC
 re.findall(r'(A.TAAT)|(GC[A|G][A|T]TG)', string1)
 #ANT\AAT restriction enzyme cut
 list1=re.split(r'(.+A.T)(AAT.+)', string1)
-
+len(list1)
 ```
+
 ![](/blog/2020-05-14-python-blog-post_files/python_r.jpeg)
+
 
 
 
