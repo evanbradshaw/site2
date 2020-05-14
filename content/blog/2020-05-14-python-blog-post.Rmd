@@ -24,7 +24,7 @@ re.findall(r'(A.TAAT)|(GC[A|G][A|T]TG)', string1)
 list1=re.split(r'(.+A.T)(AAT.+)', string1)
 
 ```
-
+![](/blog/2020-05-14-python-blog-post_files/python_r.jpeg)
 
 
 
