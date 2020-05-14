@@ -1,0 +1,21 @@
+{{ partial "head" . }}
+  <body>
+    <div id="wrap">
+      {{ partial "header" . }}
+      <section id="about">
+        <div class="container">
+        <div class="avatar">
+          <img class="img-circle" src="{{ .Site.BaseURL }}img/{{ .Site.Params.avatar }}" alt="It me." height=200px width=200px >
+        </div>
+        <h3>My name is <strong>{{ .Site.Params.author }}</strong> and I'm a medical student at the Texas Tech University School of Medicine.</h3>
+        <h3>Welcome to my website.</h3>
+        <h3>Have a look at some of my current and past <a href="{{ .Site.BaseURL }}projects/"> projects</a>.</h3>
+        <h3>For more, check out my academic &amp; professional <a href="EAB resume.pdf" target="_blank">resume</a>.</h3>
+        <h3>Contact me at <a href="http://twitter.com/{{ .Site.Params.Social.Twitter }}">@{{ .Site.Params.Social.Twitter }}</a> or by <a href="mailto:{{ .Site.Params.Social.Email }}">email</a>.</h3>
+        {{ partial "social.html" . }}
+        </div>
+      </section>
+    </div>
+    {{ partial "footer" . }}
+  </body>
+</html>

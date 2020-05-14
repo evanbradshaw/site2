@@ -28,3 +28,4 @@ list1=re.split(r'(.+A.T)(AAT.+)', string1)
 
 
 
+
