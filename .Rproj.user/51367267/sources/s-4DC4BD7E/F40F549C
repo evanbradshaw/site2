@@ -5,14 +5,14 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1146081014",
+    "hash" : "751465163",
     "id" : "F40F549C",
-    "lastKnownWriteTime" : 1589492756,
-    "last_content_update" : 1589492756739,
+    "lastKnownWriteTime" : 1589493173,
+    "last_content_update" : 1589493173209,
     "path" : "~/Documents/University of Texas/Computational Bio/Website/content/blog/2020-05-14-python-blog-post.Rmd",
     "project_path" : "content/blog/2020-05-14-python-blog-post.Rmd",
     "properties" : {
-        "cursorPosition" : "25,0",
+        "cursorPosition" : "28,16",
         "scrollLine" : "19"
     },
     "read_only" : false,
